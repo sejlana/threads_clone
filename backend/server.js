@@ -7,7 +7,7 @@ import userRoutes from "./routes/userRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import { v2 as cloudinary } from "cloudinary";
-// import { app, server } from "./socket/socket.js";
+
 
 
 dotenv.config();
