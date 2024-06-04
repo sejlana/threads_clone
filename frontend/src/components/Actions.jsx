@@ -14,8 +14,79 @@ import {
   Text,
   useDisclosure,
 } from '@chakra-ui/react'
+import { useState } from 'react'
+import { useRecoilValue } from 'recoil'
+import userAtom from '../atoms/userAtom'
+import useShowToast from '../hooks/useShowToast'
+import { on } from 'events'
 
-const Actions = ({ liked, setLiked }) => {
+const Actions = ({ post: post_ }) => {
+  const user = useRecoilValue(userAtom)
+  const [liked, setLiked] = useState(post_.likes.includes(user?._id))
+  const [post, setPost] = useState(post_)
+  const [liking, setLiking] = useState(false)
+  const [replying, setReplying] = useState(false)
+  const [reply, setReply] = useState('')
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const Toast = useShowToast()
+
+  const handleLikeUnlike = async () => {
+    if (!user)
+      return Toast('Error', 'You need to be logged in to like a post', 'error')
+    if (liking) return
+    setLiking(true)
+    try {
+      const res = await fetch('/api/posts/like/' + post._id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      const data = await res.json()
+      if (data.error) return Toast('Error', data.error, 'error')
+      if (!liked) {
+        setPost({ ...post, likes: [...post.likes, user._id] })
+      } else {
+        setPost({ ...post, likes: post.likes.filter((id) => id !== user._id) })
+      }
+      setLiked(!liked)
+    } catch (error) {
+      Toast('Error', error.message, 'error')
+    } finally {
+      setLiking(false)
+    }
+  }
+
+  const handleReply = async () => {
+    if (!user)
+      return Toast(
+        'Error',
+        'You need to be logged in to reply to a post',
+        'error',
+      )
+    if (replying) return
+    setReplying(true)
+    try {
+      const res = await fetch('/api/posts/reply/' + post._id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: reply }),
+      })
+      const data = await res.json()
+      if (data.error) return Toast('Error', data.error, 'error')
+      setPost({ ...post, replies: [...post.replies, data.reply] })
+      Toast('Success', 'Reply added successfully', 'success')
+      onClose()
+    } catch (error) {
+      Toast('Error', error.message, 'error')
+    } finally {
+      setReplying(false)
+      setReply('')
+    }
+  }
+
   return (
     <Flex flexDirection="column">
       <Flex gap={3} my={2} onClick={(e) => e.preventDefault()}>
@@ -27,7 +98,7 @@ const Actions = ({ liked, setLiked }) => {
           role="img"
           viewBox="0 0 24 22"
           width="20"
-          onClick={() => setLiked(!liked)}
+          onClick={handleLikeUnlike}
         >
           <path
             d="M1 7.66c0 4.575 3.899 9.086 9.987 12.934.338.203.74.406 1.013.406.283 0 .686-.203 1.013-.406C19.1 16.746 23 12.234 23 7.66 23 3.736 20.245 1 16.672 1 14.603 1 12.98 1.94 12 3.352 11.042 1.952 9.408 1 7.328 1 3.766 1 1 3.736 1 7.66Z"
@@ -44,7 +115,7 @@ const Actions = ({ liked, setLiked }) => {
           role="img"
           viewBox="0 0 24 24"
           width="20"
-          // onClick={onOpen}
+          onClick={onOpen}
         >
           <title>Comment</title>
           <path
@@ -59,6 +130,44 @@ const Actions = ({ liked, setLiked }) => {
         <RepostSVG />
         <ShareSVG />
       </Flex>
+      <Flex gap={2} alignItems={'center'}>
+        <Text color={'gray.light'} fontSize="sm">
+          {post?.replies.length} Replies
+        </Text>
+        <Box w={0.5} h={0.5} borderRadius={'full'} bg={'gray.light'}></Box>
+        <Text color={'gray.light'} fontSize="sm">
+          {post.likes.length} Likes
+        </Text>
+      </Flex>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader pb={6}>
+            <ModalCloseButton />
+          </ModalHeader>
+          <ModalBody pb={6}>
+            <FormControl>
+              <Input
+                placeholder="Reply..."
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+              />
+            </FormControl>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              size={'sm'}
+              mr={3}
+              isLoading={replying}
+              onClick={handleReply}
+            >
+              Reply
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Flex>
   )
 }
@@ -84,7 +193,6 @@ const RepostSVG = () => {
     </svg>
   )
 }
-
 const ShareSVG = () => {
   return (
     <svg
