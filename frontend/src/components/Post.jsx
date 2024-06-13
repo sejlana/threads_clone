@@ -1,25 +1,28 @@
-import { Avatar, Box, Flex, Image, Text } from '@chakra-ui/react'
+import { Avatar } from '@chakra-ui/avatar'
+import { Image } from '@chakra-ui/image'
+import { Box, Flex, Text } from '@chakra-ui/layout'
 import { Link, useNavigate } from 'react-router-dom'
 import Actions from './Actions'
 import { useEffect, useState } from 'react'
 import useShowToast from '../hooks/useShowToast'
 import { formatDistanceToNow } from 'date-fns'
 import { DeleteIcon } from '@chakra-ui/icons'
-import { useRecoilValue } from 'recoil'
+import { useRecoilState, useRecoilValue } from 'recoil'
 import userAtom from '../atoms/userAtom'
+import postsAtom from '../atoms/postAtom'
 
 const Post = ({ post, postedBy }) => {
   const [user, setUser] = useState(null)
   const Toast = useShowToast()
-  const navigate = useNavigate()
   const currentUser = useRecoilValue(userAtom)
+  const [posts, setPosts] = useRecoilState(postsAtom)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const getUser = async () => {
       try {
         const res = await fetch('/api/users/profile/' + postedBy)
         const data = await res.json()
-        console.log(data)
         if (data.error) {
           Toast('Error', data.error, 'error')
           return
@@ -30,6 +33,7 @@ const Post = ({ post, postedBy }) => {
         setUser(null)
       }
     }
+
     getUser()
   }, [postedBy, Toast])
 
@@ -37,6 +41,7 @@ const Post = ({ post, postedBy }) => {
     try {
       e.preventDefault()
       if (!window.confirm('Are you sure you want to delete this post?')) return
+
       const res = await fetch(`/api/posts/${post._id}`, {
         method: 'DELETE',
       })
@@ -45,32 +50,34 @@ const Post = ({ post, postedBy }) => {
         Toast('Error', data.error, 'error')
         return
       }
-      Toast('Success', 'Post Deleted', 'success')
+      Toast('Success', 'Post deleted', 'success')
+      setPosts(posts.filter((p) => p._id !== post._id))
     } catch (error) {
       Toast('Error', error.message, 'error')
     }
   }
 
+  if (!user) return null
   return (
-    <Link to={`/${user?.username}/post/${post._id}`}>
+    <Link to={`/${user.username}/post/${post._id}`}>
       <Flex gap={3} mb={4} py={5}>
         <Flex flexDirection={'column'} alignItems={'center'}>
           <Avatar
             size="md"
-            name={user?.name}
+            name={user.name}
             src={user?.profilePic}
             onClick={(e) => {
               e.preventDefault()
-              navigate(`/${user?.username}`)
+              navigate(`/${user.username}`)
             }}
           />
           <Box w="1px" h={'full'} bg="gray.light" my={2}></Box>
           <Box position={'relative'} w={'full'}>
-            {post.replies.length === 0 && <Text textAlign={'center'}>😒</Text>}
-
+            {post.replies.length === 0 && <Text textAlign={'center'}>🥱</Text>}
             {post.replies[0] && (
               <Avatar
                 size="xs"
+                name="John doe"
                 src={post.replies[0].userProfilePic}
                 position={'absolute'}
                 top={'0px'}
@@ -82,20 +89,23 @@ const Post = ({ post, postedBy }) => {
             {post.replies[1] && (
               <Avatar
                 size="xs"
+                name="John doe"
                 src={post.replies[1].userProfilePic}
                 position={'absolute'}
-                top={'0px'}
-                left="15px"
+                bottom={'0px'}
+                right="-5px"
                 padding={'2px'}
               />
             )}
+
             {post.replies[2] && (
               <Avatar
                 size="xs"
+                name="John doe"
                 src={post.replies[2].userProfilePic}
                 position={'absolute'}
-                top={'0px'}
-                left="15px"
+                bottom={'0px'}
+                left="4px"
                 padding={'2px'}
               />
             )}
@@ -114,19 +124,24 @@ const Post = ({ post, postedBy }) => {
               >
                 {user?.username}
               </Text>
-              <Image src="/verified.png" alt="verified" w={4} h={4} ml={1} />
+              <Image src="/verified.png" w={4} h={4} ml={1} />
             </Flex>
             <Flex gap={4} alignItems={'center'}>
-              <Text fontSize={'xs'} textAlign={'right'} color={'gray.light'}>
-                {formatDistanceToNow(new Date(post.createdAt), {
-                  addSuffix: true,
-                })}
+              <Text
+                fontSize={'xs'}
+                width={36}
+                textAlign={'right'}
+                color={'gray.light'}
+              >
+                {formatDistanceToNow(new Date(post.createdAt))} ago
               </Text>
-              {currentUser?._id === user?._id && (
+
+              {currentUser?._id === user._id && (
                 <DeleteIcon size={20} onClick={handleDeletePost} />
               )}
             </Flex>
           </Flex>
+
           <Text fontSize={'sm'}>{post.text}</Text>
           {post.img && (
             <Box
@@ -138,6 +153,7 @@ const Post = ({ post, postedBy }) => {
               <Image src={post.img} w={'full'} />
             </Box>
           )}
+
           <Flex gap={3} my={1}>
             <Actions post={post} />
           </Flex>

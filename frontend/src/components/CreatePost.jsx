@@ -21,9 +21,10 @@ import {
 } from '@chakra-ui/react'
 import usePreviewImg from '../hooks/usePreviewImg'
 import { useRef, useState } from 'react'
-import { useRecoilValue } from 'recoil'
+import { useRecoilState, useRecoilValue } from 'recoil'
 import userAtom from '../atoms/userAtom'
 import useShowToast from '../hooks/useShowToast'
+import postsAtom from '../atoms/postAtom'
 
 const MAX_CHAR = 500
 
@@ -36,6 +37,7 @@ const CreatePost = () => {
   const user = useRecoilValue(userAtom)
   const Toast = useShowToast()
   const [loading, SetLoading] = useState(false)
+  const [posts, setPosts] = useRecoilState(postsAtom)
 
   const handleTextChange = (e) => {
     const inputText = e.target.value
@@ -70,6 +72,7 @@ const CreatePost = () => {
         return
       }
       Toast('Success', 'Post created successfully', 'success')
+      setPosts([data, ...posts])
       onClose()
       setPostText('')
       setImgUrl('')
@@ -85,12 +88,12 @@ const CreatePost = () => {
       <Button
         position={'fixed'}
         bottom={15}
-        right={15}
-        leftIcon={<AddIcon />}
+        right={5}
         bg={useColorModeValue('gray.300', 'gray.dark')}
         onClick={onOpen}
+        size={{ base: 'sm', sm: 'md' }}
       >
-        Post
+        <AddIcon />
       </Button>
       <Modal blockScrollOnMount={false} isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
