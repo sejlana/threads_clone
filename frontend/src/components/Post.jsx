@@ -19,6 +19,10 @@ const Post = ({ post, postedBy }) => {
   const navigate = useNavigate()
 
   useEffect(() => {
+    console.log('Post prop:', post)
+  }, [post])
+
+  useEffect(() => {
     const getUser = async () => {
       try {
         const res = await fetch('/api/users/profile/' + postedBy)

@@ -14,7 +14,7 @@ import {
   Text,
   useDisclosure,
 } from '@chakra-ui/react'
-import { useState }  from 'react'
+import { useState, useEffect } from 'react'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import userAtom from '../atoms/userAtom'
 import useShowToast from '../hooks/useShowToast'
@@ -22,19 +22,23 @@ import postsAtom from '../atoms/postAtom'
 
 const Actions = ({ post }) => {
   const user = useRecoilValue(userAtom)
- 
   const [posts, setPosts] = useRecoilState(postsAtom)
   const [isLiking, setIsLiking] = useState(false)
   const [isReplying, setIsReplying] = useState(false)
   const [reply, setReply] = useState('')
-
   const Toast = useShowToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const [liked, setLiked] = useState(false)
+
+  useEffect(() => {
+    if (post && post.likes) {
+      setLiked(post.likes.includes(user?._id))
+    }
+  }, [post, user])
 
   if (!post || !post.likes) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
-  const [liked, setLiked] = useState(post.likes.includes(user?._id))
 
   const handleLikeAndUnlike = async () => {
     if (!user)
@@ -124,6 +128,7 @@ const Actions = ({ post }) => {
           viewBox="0 0 24 22"
           width="20"
           onClick={handleLikeAndUnlike}
+          cursor="pointer"
         >
           <path
             d="M1 7.66c0 4.575 3.899 9.086 9.987 12.934.338.203.74.406 1.013.406.283 0 .686-.203 1.013-.406C19.1 16.746 23 12.234 23 7.66 23 3.736 20.245 1 16.672 1 14.603 1 12.98 1.94 12 3.352 11.042 1.952 9.408 1 7.328 1 3.766 1 1 3.736 1 7.66Z"
@@ -141,6 +146,7 @@ const Actions = ({ post }) => {
           viewBox="0 0 24 24"
           width="20"
           onClick={onOpen}
+          cursor="pointer"
         >
           <title>Comment</title>
           <path
@@ -210,6 +216,7 @@ const RepostSVG = () => {
       role="img"
       viewBox="0 0 24 24"
       width="20"
+      cursor="pointer"
     >
       <title>Repost</title>
       <path
@@ -230,6 +237,7 @@ const ShareSVG = () => {
       role="img"
       viewBox="0 0 24 24"
       width="20"
+      cursor="pointer"
     >
       <title>Share</title>
       <line
